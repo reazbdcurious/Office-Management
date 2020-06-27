@@ -1,0 +1,1875 @@
+from tkinter import *
+from tkinter import Toplevel,messagebox,filedialog
+from tkinter import ttk
+from tkinter.ttk import Treeview
+import pymysql
+import pandas
+from PIL import ImageTk
+
+
+
+class stf:
+    def __init__(self,root):
+        self.root=root
+        self.root.title("Special Task Force Management")
+        self.bg=ImageTk.PhotoImage(file="icon/image2.jpg")
+        #self.root.config(image=self.bg)
+        self.root.geometry("1325x695+5+3")
+        self.root.iconbitmap("icon/main_icon.ico")
+        self.root.resizable(False,False)
+        self.bg_image_lbl=Label(self.root,image=self.bg).place(x=0,y=0,relwidth=1,relheight=1)
+
+        self.payment_frame=False
+        self.information_frame=False
+        self.connectionok=False
+
+        self.intro_frame = Frame(self.root, bg='#EED2EE', bd=6, relief=GROOVE)
+        self.intro_frame.place(x=50, y=20, width=1150, height=80)
+
+        intro_label=Label(self.intro_frame,text='Special Task Force Management System',font=('Copperplate Gothic Bold',35,'bold'),
+                          bg='#EED2EE',
+                          fg='Black')
+        intro_label.place(x=10,y=10)
+
+
+####---------------------------------------------------------------------- Connection Frame
+        self.connection_frame = Frame(self.root, bg='#698B69', bd=6, relief=GROOVE)
+        self.connection_frame.place(x=750, y=350, width=500, height=280)
+
+        connection_label = Label(self.connection_frame, text='Connect Your Database', bg='#698B69',fg='#8B0000',
+                           font=('Bahnschrift SemiBold', 18, 'bold'),
+                           borderwidth=4)
+        connection_label.place(x=110, y=5)
+
+
+        host_label = Label(self.connection_frame, text='Enter Host', bg='#9ACD32', relief=GROOVE, font=('Times', 20, 'bold'),
+                           borderwidth=4, width=9)
+        host_label.place(x=10, y=50)
+
+        user_label = Label(self.connection_frame, text='User', bg='#9ACD32', relief=GROOVE, font=('Times', 20, 'bold'),
+                           borderwidth=4,
+                           width=9)
+        user_label.place(x=10, y=100)
+
+        password_label = Label(self.connection_frame, text='Password', bg='#9ACD32', relief=GROOVE, font=('Times', 20, 'bold'),
+                               borderwidth=4,
+                               width=9)
+        password_label.place(x=10, y=150)
+
+        ########################################## connectdb Entry
+        self.hostval = StringVar()
+        self.userval = StringVar()
+        self.passwordval = StringVar()
+        host_entry = Entry(self.connection_frame, font=('Times', 20, 'bold'), bd=4, textvariable=self.hostval)
+        host_entry.place(x=170, y=50)
+        user_entry = Entry(self.connection_frame, font=('Times', 20, 'bold'), bd=4, textvariable=self.userval)
+        user_entry.place(x=170, y=100)
+        password_entry = Entry(self.connection_frame, font=('Times', 20, 'bold'), bd=4, textvariable=self.passwordval)
+        password_entry.place(x=170, y=150)
+
+        ##########################################  connectdb  Button
+
+        submit_btn = Button(self.connection_frame, text='Connect', width=15, font=('Arial Rounded MT Bold', 13, 'italic'),
+                            bg='#00868B',activeforeground='white', activebackground='#00C78C', fg='black', relief=GROOVE,
+                            borderwidth=10,
+                            bd=10, command=self.submit_connection)
+        submit_btn.place(x=220, y=200)
+
+        #####################################################  Menu
+        manubar = Menu(self.root)
+        self.root.config(menu=manubar)
+
+
+
+        filemanu = Menu(manubar)
+        manubar.add_cascade(label="File", menu=filemanu)
+        filemanu.add_command(label="New Entry",command=self.add)
+        filemanu.add_command(label="save as", command=self.save)
+        filemanu.add_command(label="Exit", command=self.exit)
+
+        editmanu = Menu(manubar)
+
+        manubar.add_cascade(label="Edit", menu=editmanu)
+        editmanu.add_command(label="Update", command=self.update)
+        editmanu.add_command(label="Delete",command=self.delete)
+
+        Searchmenu = Menu(manubar)
+
+        manubar.add_cascade(label="Search", menu=Searchmenu)
+        Searchmenu.add_command(label="Show all", command=self.showall)
+        Searchmenu.add_command(label="Search", command=self.search)
+
+
+        payment_manu = Menu(manubar)
+
+        manubar.add_cascade(label="Payment", menu=payment_manu)
+        payment_manu.add_command(label="Information", command=self.payment)
+
+##########---------------------------------------------Introduction Frame-------------
+
+
+
+
+
+
+        #####################################################  All Font
+        self.font_entry=("Franklin Gothic Demi",15,"italic")
+        self.font_btn_entry=("Franklin Gothic Demi",10,"italic")
+        self.font_treeview_heading=("Franklin Gothic Demi",10,"italic")
+        self.font_treeview=("Franklin Gothic Demi",10,"italic")
+        self.font_add_frame=("Franklin Gothic Demi",11,"italic")
+        self.font_add_frame_entry=("Franklin Gothic Demi",11,"italic")
+
+    def submit_connection(self):
+
+        # host = self.hostval.get()
+        # user = self.userval.get()
+        # password = self.passwordval.get()
+        host = 'localhost'
+        user = 'root'
+        password = '1234'
+        try:
+            # global connectionok
+            self.con = pymysql.connect(host=host, user=user, password=password)
+            self.mycurser = self.con.cursor()
+            # connectionok = True
+        except:
+            messagebox.showerror('Notification', 'Data is Incorrect please try again')
+            return
+
+        try:
+            strr = 'create database stf'  ##step 1 to create database
+            self.mycurser.execute(strr)
+            strr = 'use stf'  ##step2 to use database
+            self.mycurser.execute(strr)
+            strr = 'create table customerinformation(serial int,file_no Varchar(20),office_name Varchar(20),customer_name Varchar(20),' \
+                   'address Varchar(100),customer_no Varchar(20),meter_no Varchar(50),mobile Varchar(20),issue_date DATE,reference_no Varchar(20),' \
+                   'billed_unit int,billed_amount int,collection_amount int,due_amount int,total_no_installment Varchar(10),remain_no_installment Varchar(10),next_installment_date DATE,' \
+                   'next_installment_amount int,important_information Varchar(80))'  ## create table for store student data
+            self.mycurser.execute(strr)
+            strr = 'alter table customerinformation modify column serial int not null'
+            self.mycurser.execute(strr)
+            strr = 'alter table customerinformation modify column serial int primary key'
+            self.mycurser.execute(strr)
+            messagebox.showinfo('Notification', 'Database Created and Now you are connected to the database',
+                                parent=self.root)
+        except:
+            strr = 'use stf'
+            self.mycurser.execute(strr)
+            messagebox.showinfo('Notification', 'Now you are connected to the database', parent=self.root)
+        self.connection_frame.destroy()
+        self.intro_frame.destroy()
+        self.table()
+        self.connectionok=True
+
+    def table(self):
+
+        self.full_intro_display_frame = Frame(self.root, bg='#CDC0B0', bd=4, relief=GROOVE)
+        self.full_intro_display_frame.place(x=0, y=0, width=1325, height=695)
+
+
+        self.intro_display_frame = Frame(self.full_intro_display_frame, bg='#C1CDCD', bd=4, relief=GROOVE)
+        self.intro_display_frame.place(x=20, y=5, width=1280, height=40)
+        intro_label = Label(self.intro_display_frame, text='- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - '
+                                                           '- - - - - Customer Information - - - - - - - - - - - - - - - - - - - - - - - - - -'
+                                                           ' - - - - - - - - - - - - - - - - - - - ',
+                            font=('Copperplate Gothic Bold', 14, 'bold'),
+                            bg='#EED2EE',
+                            fg='Black')
+        intro_label.place(x=2, y=2)
+
+        self.display_frame=Frame(self.full_intro_display_frame,bg='white',bd=4,relief=GROOVE)
+        self.display_frame.place(x=20,y=50,width=1280,height=600)
+        table_style=ttk.Style()
+        table_style.configure('Treeview.Heading',font=self.font_treeview_heading,foreground='Blue')
+        table_style.configure('Treeview',font=self.font_treeview,foreground='black',background='#FFD39B')
+        scroll_x=Scrollbar(self.display_frame,orient=HORIZONTAL)
+        scroll_y= Scrollbar(self.display_frame, orient=VERTICAL)
+
+        self.displaytable=Treeview(self.display_frame,columns=('serial','file_no','office','name','address','customerno','meterno','mobileno','date','refno',
+                                                     'billedunit','billedamount','collectionamount','dueamount',
+                                                     'total_installment','remain_installment','next_installment_date','next_installment_amount','important_information'),xscrollcommand=scroll_x.set,
+                              yscrollcommand=scroll_y.set)
+        scroll_x.pack(side=BOTTOM,fill=X)
+        scroll_y.pack(side=RIGHT,fill=Y)
+        scroll_x.config(command=self.displaytable.xview)
+        scroll_y.config(command=self.displaytable.yview)
+        self.displaytable.heading('serial',text='SERIAL')
+        self.displaytable.heading('file_no', text='FILE NO')
+        self.displaytable.heading('office', text='OFFICE')
+        self.displaytable.heading('name', text='CUSTOMER NAME')
+        self.displaytable.heading('address', text='ADDRESS')
+        self.displaytable.heading('customerno', text='CUSTOMER NO')
+        self.displaytable.heading('meterno', text='METER NO')
+        self.displaytable.heading('mobileno', text='MOBILE NO')
+        self.displaytable.heading('date', text='ISSUE DATE')
+        self.displaytable.heading('refno', text='REFERENCE NO')
+        self.displaytable.heading('billedunit', text='BILLED UNIT')
+        self.displaytable.heading('billedamount', text='BILLED AMOUNT')
+        self.displaytable.heading('collectionamount', text='COLLECTION AMOUNT')
+        self.displaytable.heading('dueamount', text='DUE AMOUNT')
+        self.displaytable.heading('total_installment', text='TOTAL INSTALLMENT')
+        self.displaytable.heading('remain_installment', text='REMAIN INSTALLMENT')
+        self.displaytable.heading('next_installment_date', text='NEXT INSTALLMENT DATE')
+        self.displaytable.heading('next_installment_amount', text='NEXT INSTALLMENT AMOUNT')
+        self.displaytable.heading('important_information', text='IMPORTANT INFORMATION')
+        self.displaytable['show']='headings'
+
+        self.displaytable.column('serial', width=80)
+        self.displaytable.column('file_no', width=80)
+        self.displaytable.column('office', width=120)
+        self.displaytable.column('name', width=150)
+        self.displaytable.column('address', width=200)
+        self.displaytable.column('customerno', width=110)
+        self.displaytable.column('meterno', width=110)
+        self.displaytable.column('mobileno', width=150)
+        self.displaytable.column('date', width=100)
+        self.displaytable.column('refno', width=100)
+        self.displaytable.column('billedunit', width=120)
+        self.displaytable.column('billedamount', width=120)
+        self.displaytable.column('collectionamount', width=140)
+        self.displaytable.column('dueamount', width=120)
+        self.displaytable.column('total_installment', width=130)
+        self.displaytable.column('remain_installment', width=140)
+        self.displaytable.column('next_installment_date', width=155)
+        self.displaytable.column('next_installment_amount', width=180)
+        self.displaytable.column('important_information', width=200)
+
+
+
+
+        self.displaytable.pack(fill=BOTH,expand=1)
+        self.payment_frame=False
+        self.information_frame=True
+
+
+##---------------------------------------------------------------------------table 2
+
+    def table_payment(self):
+
+        self.full_intro_display_payment_frame = Frame(self.root, bg='#CDC0B0', bd=4, relief=GROOVE)
+        self.full_intro_display_payment_frame.place(x=0, y=0, width=1325, height=695)
+
+        self.intro_display_payment_frame = Frame(self.full_intro_display_payment_frame, bg='#C1CDCD', bd=4, relief=GROOVE)
+        self.intro_display_payment_frame.place(x=20, y=5, width=1280, height=40)
+        intro_label = Label(self.intro_display_payment_frame,
+                            text='- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - '
+                                 '- - - - - Customer Information - - - - - - - - - - - - - - - - - - - - - - - - - -'
+                                 ' - - - - - - - - - - - - - - - - - - - ',
+                            font=('Copperplate Gothic Bold', 14, 'bold'),
+                            bg='#EED2EE',
+                            fg='Black')
+        intro_label.place(x=2, y=2)
+
+        self.display_payment_frame = Frame(self.full_intro_display_payment_frame, bg='white', bd=4, relief=GROOVE)
+        self.display_payment_frame.place(x=20, y=50, width=1280, height=600)
+        table_style = ttk.Style()
+        table_style.configure('Treeview.Heading', font=self.font_treeview_heading, foreground='Blue')
+        table_style.configure('Treeview', font=self.font_treeview, foreground='black', background='#FFD39B')
+        scroll_x = Scrollbar(self.display_payment_frame, orient=HORIZONTAL)
+        scroll_y = Scrollbar(self.display_payment_frame, orient=VERTICAL)
+
+        self.displaytable_payment = Treeview(self.display_payment_frame,
+                                             columns=('file_no', 'office', 'name','customerno','refno','collectionamount',
+                                                      'payment_date','bank','payorder','coment'), xscrollcommand=scroll_x.set,
+                                     yscrollcommand=scroll_y.set)
+        scroll_x.pack(side=BOTTOM, fill=X)
+        scroll_y.pack(side=RIGHT, fill=Y)
+        scroll_x.config(command=self.displaytable_payment.xview)
+        scroll_y.config(command=self.displaytable_payment.yview)
+        self.displaytable_payment.heading('file_no', text='FILE NO')
+        self.displaytable_payment.heading('office', text='OFFICE')
+        self.displaytable_payment.heading('name', text='CUSTOMER NAME')
+      #  self.displaytable_payment.heading('address', text='ADDRESS')
+        self.displaytable_payment.heading('customerno', text='CUSTOMER NO')
+        self.displaytable_payment.heading('refno', text='REFERENCE NO')
+        self.displaytable_payment.heading('collectionamount', text='PAYMENT AMOUNT')
+        self.displaytable_payment.heading('payment_date', text='PAYMENT DATE')
+        self.displaytable_payment.heading('bank', text='BANK')
+        self.displaytable_payment.heading('payorder', text='PAYORDER NO')
+        self.displaytable_payment.heading('coment', text='COMENT')
+        self.displaytable_payment['show'] = 'headings'
+
+        self.displaytable_payment.column('file_no', width=80)
+        self.displaytable_payment.column('office', width=120)
+        self.displaytable_payment.column('name', width=150)
+        self.displaytable_payment.column('customerno', width=110)
+        self.displaytable_payment.column('refno', width=110)
+        self.displaytable_payment.column('collectionamount', width=150)
+        self.displaytable_payment.column('payment_date', width=100)
+        self.displaytable_payment.column('bank', width=100)
+        self.displaytable_payment.column('payorder', width=120)
+        self.displaytable_payment.column('coment', width=120)
+
+        self.displaytable_payment.pack(fill=BOTH, expand=1)
+
+        self.information_frame=False
+        self.payment_frame=True
+
+    ###############--------------------------------Another functions
+#-----------------------------------------------------------------------------------------------------------
+    def submit_payment(self):
+        file_no = self.file_no_payment_val.get()
+        office_name = self.name_office_payment_val.get()
+        customer_name = self.name_payment_val.get()
+        customer_no = self.customer_no_payment_val.get()
+        payorder_no = self.payorder_no_payment_val.get()
+        reference_no = self.ref_no_payment_val.get()
+        payment_date = self.yy_date_payment_val.get() + self.mm_date_payment_val.get() + self.dd_date_payment_val.get()
+        payment_date_to = self.yy_date_to_payment_val.get() + self.mm_date_to_payment_val.get() + self.dd_date_to_payment_val.get()
+
+        try:
+            if (file_no != ''):
+                strr = 'select * from payment where file_no=%s'
+                self.mycurser.execute(strr, (file_no))
+                data = self.mycurser.fetchall()
+                self.displaytable_payment.delete(*self.displaytable_payment.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]]
+                    self.displaytable_payment.insert('', END, values=vv)
+
+            elif (office_name != ''):
+                strr = 'select * from payment where office_name=%s'
+                self.mycurser.execute(strr, (office_name))
+                data = self.mycurser.fetchall()
+                self.displaytable_payment.delete(*self.displaytable_payment.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]]
+                    self.displaytable_payment.insert('', END, values=vv)
+            elif (customer_name != ''):
+                strr = 'select * from payment where customer_name=%s'
+                self.mycurser.execute(strr, (customer_name))
+                data = self.mycurser.fetchall()
+                self.displaytable_payment.delete(*self.displaytable_payment.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]]
+                    self.displaytable_payment.insert('', END, values=vv)
+            elif (customer_no != ''):
+                strr = 'select * from payment where customer_no=%s'
+                self.mycurser.execute(strr, (customer_no))
+                data = self.mycurser.fetchall()
+                self.displaytable_payment.delete(*self.displaytable_payment.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]]
+                    self.displaytable_payment.insert('', END, values=vv)
+            elif (reference_no != ''):
+                strr = 'select * from payment where reference_no=%s'
+                self.mycurser.execute(strr, (reference_no))
+                data = self.mycurser.fetchall()
+                self.displaytable_payment.delete(*self.displaytable_payment.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]]
+                    self.displaytable_payment.insert('', END, values=vv)
+            elif (payorder_no != ''):
+                strr = 'select * from payment where payorder_no=%s'
+                self.mycurser.execute(strr, (payorder_no))
+                data = self.mycurser.fetchall()
+                self.displaytable_payment.delete(*self.displaytable_payment.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]]
+                    self.displaytable_payment.insert('', END, values=vv)
+
+
+            elif (payment_date != ''):
+                strr = 'select * from payment where payment_date BETWEEN %s AND %s'
+                self.mycurser.execute(strr, (payment_date, payment_date_to))
+                data = self.mycurser.fetchall()
+                self.displaytable_payment.delete(*self.displaytable_payment.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]]
+                    self.displaytable_payment.insert('', END, values=vv)
+
+
+
+        except:
+            messagebox.showerror('Error', 'please check all Field', parent=self.payment_root)
+
+        print('submit payment')
+
+    def showall_payment(self):
+
+        strr = 'select * from payment'
+        self.mycurser.execute(strr)
+        data = self.mycurser.fetchall()
+        self.displaytable_payment.delete(*self.displaytable_payment.get_children())
+        for i in data:
+            vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]]
+            self.displaytable_payment.insert('', END, values=vv)
+
+        print('Show all Payment')
+
+
+    def payment(self):
+        if self.connectionok == True:
+            self.full_intro_display_frame.destroy()
+            self.table_payment()
+
+            self.payment_root = Toplevel(master=self.full_intro_display_payment_frame)
+            self.payment_root.grab_set()
+            self.payment_root.title('Search Payment Information')
+            self.payment_root.geometry('800x380+40+40')
+            self.payment_root.configure(bg='#CAFF70')
+            self.payment_root.iconbitmap('icon/main_icon.ico')
+
+            ##-------------------------------------------------------- variables
+
+            self.file_no_payment_val = StringVar()
+            self.name_payment_val = StringVar()
+            self.name_office_payment_val = StringVar()
+            self.customer_no_payment_val = StringVar()
+            self.payorder_no_payment_val = StringVar()
+            self.dd_date_payment_val = StringVar()
+            self.mm_date_payment_val = StringVar()
+            self.yy_date_payment_val = StringVar()
+            self.dd_date_to_payment_val = StringVar()
+            self.mm_date_to_payment_val = StringVar()
+            self.yy_date_to_payment_val = StringVar()
+            # self.date_payment_val = self.yy_date_payment_val.get()+'/'+self.mm_date_payment_val.get()+'/'+self.dd_date_payment_val.get()
+            self.ref_no_payment_val = StringVar()
+
+            #        ##-------------------------------------------------------- Label
+            payment_label = Label(self.payment_root, font=('Times', 20, 'bold'), text='Search Payment Information', fg='black',
+                                 bg='#CAFF70',
+                                 borderwidth=1)
+
+            payment_label.place(x=220, y=10)
+
+            file_no_label = Label(self.payment_root, font=self.font_add_frame, text='File No', fg='black', bg='#8DEEEE',
+                                  borderwidth=3,
+                                  relief=GROOVE, width=15)
+            file_no_label.place(x=20, y=70)
+            office_label = Label(self.payment_root, font=self.font_add_frame, text='Name of Office', fg='black',
+                                 bg='#8DEEEE',
+                                 borderwidth=3,
+                                 relief=GROOVE, width=15)
+            office_label.place(x=400, y=70)
+            cust_name_label = Label(self.payment_root, font=self.font_add_frame, text='Customer Name', fg='black',
+                                    bg='#8DEEEE',
+                                    borderwidth=3,
+                                    relief=GROOVE, width=15)
+            cust_name_label.place(x=20, y=110)
+            cust_no_label = Label(self.payment_root, font=self.font_add_frame, text='Customer No.', fg='black', bg='#8DEEEE',
+                                  borderwidth=3,
+                                  relief=GROOVE, width=15)
+            cust_no_label.place(x=400, y=110)
+            ref_no_label = Label(self.payment_root, font=self.font_add_frame, text='Reference No.', fg='black', bg='#8DEEEE',
+                                  borderwidth=3,
+                                  relief=GROOVE, width=15)
+            ref_no_label.place(x=20, y=150)
+            payorder_label = Label(self.payment_root, font=self.font_add_frame, text='Payorder No.', fg='black', bg='#8DEEEE',
+                                   borderwidth=3,
+                                   relief=GROOVE, width=15)
+            payorder_label.place(x=400, y=150)
+            dd_label = Label(self.payment_root, font=('Times', 9, 'italic'), text='DD', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            dd_label.place(x=180, y=205)
+            mm_label = Label(self.payment_root, font=('Times', 9, 'italic'), text='MM', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            mm_label.place(x=250, y=205)
+            yy_label = Label(self.payment_root, font=('Times', 9, 'italic'), text='YY', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            yy_label.place(x=320, y=205)
+
+            payment_date_label = Label(self.payment_root, font=self.font_add_frame, text='Payment Date', fg='black', bg='#8DEEEE',
+                               borderwidth=3,
+                               relief=GROOVE, width=15)
+            payment_date_label.place(x=20, y=225)
+
+            to_label = Label(self.payment_root, font=('Times', 9, 'italic'), text='To', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            to_label.place(x=400, y=230)
+
+            dd_label_to = Label(self.payment_root, font=('Times', 9, 'italic'), text='DD', fg='black', bg='#C1CDCD',
+                                borderwidth=3)
+            dd_label_to.place(x=480, y=205)
+            mm_label_to = Label(self.payment_root, font=('Times', 9, 'italic'), text='MM', fg='black', bg='#C1CDCD',
+                                borderwidth=3)
+            mm_label_to.place(x=550, y=205)
+            yy_label_to = Label(self.payment_root, font=('Times', 9, 'italic'), text='YY', fg='black', bg='#C1CDCD',
+                                borderwidth=3)
+            yy_label_to.place(x=620, y=205)
+
+
+            ##-------------------------------------------------------- Entry
+
+            file_no_entry = Entry(self.payment_root, textvariable=self.file_no_payment_val, font=self.font_add_frame_entry,
+                                  bd=2,
+                                  width=15)
+            file_no_entry.place(x=150, y=70)
+            office_entry = Entry(self.payment_root, textvariable=self.name_office_payment_val, font=self.font_add_frame_entry,
+                                 bd=2,
+                                 width=25)
+            office_entry.place(x=545, y=70)
+            cust_name_entry = Entry(self.payment_root, textvariable=self.name_payment_val, font=self.font_add_frame_entry,
+                                    bd=2,
+                                    width=25)
+            cust_name_entry.place(x=150, y=110)
+            cust_no_entry = Entry(self.payment_root, textvariable=self.customer_no_payment_val, font=self.font_add_frame_entry,
+                                  bd=2,
+                                  width=25)
+            cust_no_entry.place(x=545, y=110)
+            ref_no_entry = Entry(self.payment_root, textvariable=self.ref_no_payment_val,
+                                  font=self.font_add_frame_entry,
+                                  bd=2, width=25)
+            ref_no_entry.place(x=150, y=150)
+            payorder_no_entry = Entry(self.payment_root, textvariable=self.payorder_no_payment_val, font=self.font_add_frame_entry,
+                                   bd=2,
+                                   width=25)
+            payorder_no_entry.place(x=545, y=150)
+
+            dd_date_entry = Entry(self.payment_root, textvariable=self.dd_date_payment_val, font=self.font_add_frame_entry,
+                                  bd=2,
+                                  width=6)
+            dd_date_entry.place(x=165, y=225)
+            mm_date_entry = Entry(self.payment_root, textvariable=self.mm_date_payment_val, font=self.font_add_frame_entry,
+                                  bd=2,
+                                  width=6)
+            mm_date_entry.place(x=235, y=225)
+            yy_date_entry = Entry(self.payment_root, textvariable=self.yy_date_payment_val, font=self.font_add_frame_entry,
+                                  bd=2,
+                                  width=6)
+            yy_date_entry.place(x=305, y=225)
+
+            dd_date_entry_to = Entry(self.payment_root, textvariable=self.dd_date_to_payment_val,
+                                     font=self.font_add_frame_entry, bd=2,
+                                     width=6)
+            dd_date_entry_to.place(x=465, y=225)
+            mm_date_entry_to = Entry(self.payment_root, textvariable=self.mm_date_to_payment_val,
+                                     font=self.font_add_frame_entry, bd=2,
+                                     width=6)
+            mm_date_entry_to.place(x=536, y=225)
+            yy_date_entry_to = Entry(self.payment_root, textvariable=self.yy_date_to_payment_val,
+                                     font=self.font_add_frame_entry, bd=2,
+                                     width=6)
+            yy_date_entry_to.place(x=605, y=225)
+
+
+            ##-------------------------------------------- Submit button
+            showall_pament_btn = Button(self.payment_root, text='Show All Payment', width=17, font=self.font_add_frame_entry, bd=6,
+                                relief=GROOVE,
+                                bg='#00C957', fg='black', command=self.showall_payment)
+            showall_pament_btn.place(x=420, y=300)
+
+            submit_btn = Button(self.payment_root, text='Search', width=17, font=self.font_add_frame_entry, bd=6,
+                                relief=GROOVE,
+                                bg='#00C957', fg='black', command=self.submit_payment)
+            submit_btn.place(x=200, y=300)
+
+            self.payment_root.mainloop()
+
+            print('payment')
+        else:
+            messagebox.showerror('Error', 'Please Connect Your Database ',parent=self.root)
+
+#--------------------------------------------------------------------------------------------------
+
+    def save(self):
+        if self.connectionok==True:
+            if self.information_frame==True:
+
+                ff = filedialog.asksaveasfilename()
+                gg = self.displaytable.get_children()
+                serial,file_no, office_name, customer_name, address, customer_no, meter_no, mobile, issue_date, reference_no,\
+                billed_unit, billed_amount, collection_amount, due_amount, total_no_installment, remain_no_installment, next_installment_date,\
+                next_installment_amount, important_information=[], [], [], [], [], [], [], [], [],[], [], [], [], [], [], [], [], [], []
+                for i in gg:
+                    content = self.displaytable.item(i)
+                    pp = content['values']
+                    serial.append(pp[0]), file_no.append(pp[1]), office_name.append(pp[2]), customer_name.append(pp[3]), address.append(pp[4]), customer_no.append(pp[5]), meter_no.append(pp[6]), mobile.append(pp[7]), issue_date.append(pp[8]), reference_no.append(pp[9]), \
+                    billed_unit.append(pp[10]), billed_amount.append(pp[11]), collection_amount.append(pp[12]), due_amount.append(pp[13]), total_no_installment.append(pp[14]), remain_no_installment.append(pp[15]), next_installment_date.append(pp[16]), \
+                    next_installment_amount.append(pp[17]), important_information.append(pp[18])
+
+
+                dd=['Serial','File No', 'Office', 'Name', 'Address', 'Customer No', 'Meter No', 'Mobile', 'Issue Date', 'Reference No',\
+                'Billed Unit', 'Billed Amount', 'Collection Amount', 'Due Amount', 'Total Number of Installment', 'Remain Number of Installment', 'Next Installment Date',\
+                'Next Installment Amount', 'Important Information']
+                df = pandas.DataFrame(list(zip(serial,file_no, office_name, customer_name, address, customer_no, meter_no, mobile, issue_date, reference_no,\
+                billed_unit, billed_amount, collection_amount, due_amount, total_no_installment, remain_no_installment, next_installment_date,\
+                next_installment_amount, important_information)),
+                                      columns=dd)
+                # paths = r'{}.csv'.format(ff)
+                paths = r'{}.xlsx'.format(ff)
+                df.to_excel(paths, index=False, header=True)
+                # df.to_csv(paths, index=False)
+                messagebox.showinfo('Notifications', 'Information is Saved {}'.format(paths))
+            elif self.payment_frame==True:
+
+                ff = filedialog.asksaveasfilename()
+                gg = self.displaytable_payment.get_children()
+                file_no, office_name, customer_name, customer_no, reference_no, collection_amount, payment_date,bank,\
+                payorder_no=[], [], [], [], [], [], [], [], []
+                for i in gg:
+                    content = self.displaytable_payment.item(i)
+                    pp = content['values']
+                    file_no.append(pp[0]), office_name.append(pp[1]), customer_name.append(pp[2]), customer_no.append(pp[3]), reference_no.append(pp[4]),\
+                    collection_amount.append(pp[5]), payment_date.append(pp[6]), bank.append(pp[7]), payorder_no.append(pp[8])
+
+
+                dd=['File No', 'Office', 'Name','Customer No','Reference No','Collection Amount','Payment Date',
+                    'Bank', 'Payorder No']
+                df = pandas.DataFrame(list(zip(file_no, office_name, customer_name, customer_no, reference_no, collection_amount, payment_date,
+                bank, payorder_no)),
+                                      columns=dd)
+                # paths = r'{}.csv'.format(ff)
+                paths = r'{}.xlsx'.format(ff)
+                df.to_excel(paths, index=False, header=True)
+                # df.to_csv(paths, index=False)
+                messagebox.showinfo('Notifications', 'Information is Saved {}'.format(paths))
+        else:
+            messagebox.showerror('Error', 'Please Connect Your Database ',parent=self.root)
+
+
+#-------------------------------------------------------------------------------------------------------------------
+    def delete(self):
+        if self.connectionok == True:
+            try:
+
+                if self.information_frame==True:
+                    cc = self.displaytable.focus()
+                    content = self.displaytable.item(cc)
+                    pp = content['values'][1]
+                    res=messagebox.askyesnocancel('Warnning','Do you want to delete File No= {}'.format(pp))
+                    if res==True:
+                        strr = 'delete from customerinformation where file_no=%s'
+                        self.mycurser.execute(strr, (pp))
+                        self.con.commit()
+                        messagebox.showinfo('Notifications', 'File No= {} deleted successfully......'.format(pp))
+                        strr = 'select * from customerinformation'
+                        self.mycurser.execute(strr)
+                        data = self.mycurser.fetchall()
+                        self.displaytable.delete(*self.displaytable.get_children())
+                        o = 1
+                        for i in data:
+                            vv = [o, i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11], i[12], i[13], i[14],
+                                  i[15],
+                                  i[16], i[17], i[18]]
+                            o = o + 1
+                            self.displaytable.insert('', END, values=vv)
+                elif self.payment_frame==True:
+                    cc = self.displaytable_payment.focus()
+                    content = self.displaytable_payment.item(cc)
+                    pp = content['values'][8]
+                    res = messagebox.askyesnocancel('Warnning', 'Do you want to delete payorder no= {}'.format(pp))
+                    if res == True:
+                        strr = 'delete from payment where payorder_no=%s'
+                        self.mycurser.execute(strr, (pp))
+                        self.con.commit()
+                        messagebox.showinfo('Notifications', 'payorder no= {} deleted successfully......'.format(pp))
+                        strr = 'select * from payment'
+                        self.mycurser.execute(strr)
+                        data = self.mycurser.fetchall()
+                        self.displaytable_payment.delete(*self.displaytable_payment.get_children())
+                        for i in data:
+                            vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8]]
+                            self.displaytable_payment.insert('', END, values=vv)
+            except:
+                messagebox.showerror('Error', 'Please Select data  ', parent=self.root)
+
+        else:
+            messagebox.showerror('Error', 'Please Connect Your Database ',parent=self.root)
+
+#-----------------------------------------------------------------------------------------------------
+    def exit(self):
+        res=messagebox.askyesnocancel('Notification','Do you want to Exit')
+        if res==True:
+            self.root.destroy()
+#---------------------------------------------- Submit function of ADD
+    def submit_add(self):
+        file_no=self.file_no_add_val.get()
+        office_name=self.name_office_add_val.get()
+        customer_name=self.name_add_val.get()
+        address=self.address_add_val.get()
+        customer_no=self.customer_no_add_val.get()
+        meter_no=self.meter_no_add_val.get()
+        mobile=self.mobile_add_val.get()
+        issue_date=self.yy_date_add_val.get()+self.mm_date_add_val.get()+self.dd_date_add_val.get()
+        reference_no=self.ref_no_add_val.get()
+        billed_unit=self.billed_unit_add_val.get()
+        billed_amount=self.billed_amount_add_val.get()
+        collection_amount=self.collection_amount_add_val.get()
+        due_amount =self.billed_amount_add_val.get()-self.collection_amount_add_val.get()
+        payorder_no=self.payorder_no_add_val.get()
+        bank=self.bank_add_val.get()
+        payment_date=self.yy_payment_add_val.get()+self.mm_payment_add_val.get()+self.dd_payment_add_val.get()
+        total_no_installment=self.total_installment_add_val.get()
+        remain_no_installment=self.remain_installment_add_val.get()
+        next_installment_date=self.yy_installment_add_val.get() + self.mm_installment_add_val.get() + self.dd_installment_add_val.get()
+        next_installment_amount=self.amount_installment_add_val.get()
+        important_information=self.detail_installment_add_val.get()
+
+        save=messagebox.askyesnocancel('Notification',
+                                            'Do yoy want to add Customer No. {} Name {} '.format(customer_no,
+                                                                                                                    customer_name),
+                                            parent=self.add_root)
+        if save==True:
+
+            try:
+                strr = 'insert into customerinformation (file_no,office_name,customer_name,address,customer_no,meter_no,mobile,issue_date,reference_no,billed_unit,billed_amount,collection_amount,due_amount,total_no_installment,remain_no_installment, next_installment_date,next_installment_amount,important_information) values(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+
+
+
+                self.mycurser.execute(strr, (file_no,office_name,customer_name,address,customer_no,meter_no,mobile,issue_date,reference_no,billed_unit,billed_amount,collection_amount,due_amount,total_no_installment,remain_no_installment, next_installment_date,next_installment_amount,important_information))
+                self.con.commit()
+
+                strr = 'insert into payment (file_no,office_name,customer_name,customer_no,reference_no,collection_amount,payment_date,bank,payorder_no) values(%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+
+                self.mycurser.execute(strr, (file_no, office_name, customer_name,customer_no,reference_no,
+                collection_amount,payment_date,bank,payorder_no))
+                self.con.commit()
+
+
+                res = messagebox.askyesnocancel('Notification',
+                                                'Customer No. {} Name {} added successfully....and want to clean the from'.format(customer_no,
+                                                                                                                        customer_name),
+                                                parent=self.add_root)
+                if res == True:
+                    file_no = self.file_no_add_val.set("")
+                    office_name = self.name_office_add_val.set("")
+                    customer_name = self.name_add_val.set("")
+                    address = self.address_add_val.set("")
+                    customer_no = self.customer_no_add_val.set("")
+                    meter_no = self.meter_no_add_val.set("")
+                    mobile = self.mobile_add_val.set("")
+                    dd_date_add=self.dd_date_add_val.set("")
+                    mm_date_add=self.mm_date_add_val.set("")
+                    yy_date_add=self.yy_date_add_val.set("")
+                    #issue_date = self.date_add_val
+                    reference_no = self.ref_no_add_val.set("")
+                    billed_unit = self.billed_unit_add_val.set("")
+                    billed_amount = self.billed_amount_add_val.set("")
+                    collection_amount = self.collection_amount_add_val.set("")
+                    payorder_no = self.payorder_no_add_val.set("")
+                    bank = self.bank_add_val.set("")
+                    dd_pament_add = self.dd_payment_add_val.set("")
+                    mm_pament_add = self.mm_payment_add_val.set("")
+                    yy_pament_add = self.yy_payment_add_val.set("")
+                    total_no_installment = self.total_installment_add_val.set("")
+                    remain_no_installment = self.remain_installment_add_val.set("")
+                    dd_installment_add=self.dd_installment_add_val.set("")
+                    mm_installment_add=self.mm_installment_add_val.set("")
+                    yy_installment_add=self.yy_installment_add_val.set("")
+                    #next_installment_date = self.next_installment_date_add_val
+                    next_installment_amount = self.amount_installment_add_val.set("")
+                    important_information = self.detail_installment_add_val.set("")
+
+            except:
+                messagebox.showerror('Error', 'Please check all field ', parent=self.add_root)
+                return
+        strr = 'select * from customerinformation'
+        self.mycurser.execute(strr)
+        data = self.mycurser.fetchall()
+        self.displaytable.delete(*self.displaytable.get_children())
+        for i in data:
+            vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8],i[9],i[10], i[11], i[12], i[13], i[14],i[15], i[16], i[17], i[18]]
+            self.displaytable.insert('', END, values=vv)
+
+        print("add submit")
+##############---------------------------------- Main functions
+    def add(self):
+        if self.connectionok==True:
+            if (self.payment_frame==True):
+                self.full_intro_display_payment_frame.destroy()
+                self.table()
+
+            self.add_root=Toplevel(master=self.display_frame)
+            self.add_root.grab_set()
+            self.add_root.title('New Entry')
+            self.add_root.geometry('800x680+20+05')
+            self.add_root.configure(bg='#474747')
+            self.add_root.iconbitmap('icon/main_icon.ico')
+
+            ##-------------------------------------------------------- variables
+
+            self.serial_add_val=IntVar()
+            self.file_no_add_val=StringVar()
+            self.name_add_val=StringVar()
+            self.name_office_add_val = StringVar()
+            self.address_add_val=StringVar()
+            self.customer_no_add_val = StringVar()
+            self.meter_no_add_val = StringVar()
+            self.dd_date_add_val=StringVar()
+            self.mm_date_add_val = StringVar()
+            self.yy_date_add_val = StringVar()
+            self.ref_no_add_val = StringVar()
+            self.billed_unit_add_val = IntVar()
+            self.billed_amount_add_val = IntVar()
+            self.collection_amount_add_val = IntVar()
+            self.payorder_no_add_val = StringVar()
+            self.installment_add_val=StringVar()
+            self.mobile_add_val = StringVar()
+            self.comment_add_val = StringVar()
+            self.total_installment_add_val=StringVar()
+            self.remain_installment_add_val=StringVar()
+            self.detail_installment_add_val = StringVar()
+            self.dd_installment_add_val = StringVar()
+            self.mm_installment_add_val = StringVar()
+            self.yy_installment_add_val = StringVar()
+            self.amount_installment_add_val = IntVar()
+            self.bank_add_val = StringVar()
+            self.dd_payment_add_val = StringVar()
+            self.mm_payment_add_val = StringVar()
+            self.yy_payment_add_val = StringVar()
+
+
+            ##-------------------------------------------------------- Label
+            customer_label=Label(self.add_root,font=self.font_add_frame,text='Customer  Information',fg='#006400',bg='#CDC8B1',borderwidth=3,
+                            relief=GROOVE,width=40)
+            customer_label.place(x=250, y=5)
+            panal_label=Label(self.add_root,font=self.font_add_frame,text='Panal  Information',fg='#006400',bg='#CDC8B1',borderwidth=3,
+                            relief=GROOVE,width=40)
+            panal_label.place(x=250, y=200)
+
+            installment_label=Label(self.add_root,font=self.font_add_frame,text='Installment  Information',fg='#006400',bg='#CDC8B1',borderwidth=3,
+                            relief=GROOVE,width=40)
+            installment_label.place(x=250, y=440)
+
+            file_no_label=Label(self.add_root,font=self.font_add_frame,text='File No',fg='black',bg='#8DEEEE',borderwidth=3,
+                            relief=GROOVE,width=15)
+            file_no_label.place(x=20,y=40)
+            office_label = Label(self.add_root, font=self.font_add_frame, text='Name of Office', fg='black', bg='#8DEEEE',
+                                 borderwidth=3,
+                                 relief=GROOVE, width=15)
+            office_label.place(x=400, y=40)
+            cust_name_label = Label(self.add_root, font=self.font_add_frame, text='Customer Name', fg='black', bg='#8DEEEE', borderwidth=3,
+                              relief=GROOVE, width=15)
+            cust_name_label.place(x=20, y=80)
+            address_label = Label(self.add_root, font=self.font_add_frame, text='Address', fg='black', bg='#8DEEEE', borderwidth=3,
+                               relief=GROOVE, width=15)
+            address_label.place(x=400, y=80)
+            cust_no_label = Label(self.add_root, font=self.font_add_frame, text='Customer No.', fg='black', bg='#8DEEEE', borderwidth=3,
+                               relief=GROOVE, width=15)
+            cust_no_label.place(x=20, y=120)
+            meter_no_label = Label(self.add_root, font=self.font_add_frame, text='Meter No.', fg='black', bg='#8DEEEE',
+                                  borderwidth=3,
+                                  relief=GROOVE, width=15)
+            meter_no_label.place(x=400, y=120)
+            mobile_no_label = Label(self.add_root, font=self.font_add_frame, text='Mobile No.', fg='black', bg='#8DEEEE',
+                                    borderwidth=3,
+                                    relief=GROOVE, width=15)
+            mobile_no_label.place(x=20, y=160)
+            dd_label=Label(self.add_root, font=('Times',9,'italic'), text='DD', fg='black',bg='#C1CDCD',
+                                  borderwidth=3)
+            dd_label.place(x=170, y=245)
+            mm_label=Label(self.add_root, font=('Times',9,'italic'), text='MM', fg='black',bg='#C1CDCD',
+                                  borderwidth=3)
+            mm_label.place(x=240, y=245)
+            yy_label = Label(self.add_root, font=('Times', 9, 'italic'), text='YY', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            yy_label.place(x=310, y=245)
+
+
+
+            date_label = Label(self.add_root, font=self.font_add_frame, text='Issue Date', fg='black', bg='#8DEEEE',
+                                  borderwidth=3,
+                                  relief=GROOVE, width=15)
+            date_label.place(x=20, y=265)
+            ref_no_label = Label(self.add_root, font=self.font_add_frame, text='Reference No.', fg='black', bg='#8DEEEE',
+                                  borderwidth=3,
+                                  relief=GROOVE, width=15)
+            ref_no_label.place(x=400, y=265)
+            billed_unit_label = Label(self.add_root, font=self.font_add_frame, text='Billed Unit', fg='black', bg='#8DEEEE',
+                                  borderwidth=3,
+                                  relief=GROOVE, width=15)
+            billed_unit_label.place(x=20, y=305)
+            billed_amount_label = Label(self.add_root, font=self.font_add_frame, text='Billed Amount', fg='black', bg='#8DEEEE',
+                                      borderwidth=3,
+                                      relief=GROOVE, width=15)
+            billed_amount_label.place(x=400, y=305)
+            collection_amount_label = Label(self.add_root, font=self.font_add_frame, text='Collection Amount', fg='black', bg='#8DEEEE',
+                                      borderwidth=3,
+                                      relief=GROOVE, width=15)
+            collection_amount_label.place(x=20, y=345)
+            payorder_no_label = Label(self.add_root, font=self.font_add_frame, text='Payorder No.', fg='black',
+                                        bg='#8DEEEE',
+                                        borderwidth=3,
+                                        relief=GROOVE, width=15)
+            payorder_no_label.place(x=400, y=345)
+
+            bank_label = Label(self.add_root, font=self.font_add_frame, text='Bank', fg='black',
+                                            bg='#8DEEEE',
+                                            borderwidth=3,
+                                            relief=GROOVE, width=15)
+            bank_label.place(x=20, y=400)
+
+            dd_payment_label = Label(self.add_root, font=('Times', 9, 'italic'), text='DD', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            dd_payment_label.place(x=560, y=375)
+            mm_payment_label = Label(self.add_root, font=('Times', 9, 'italic'), text='MM', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            mm_payment_label.place(x=630, y=375)
+            yy_payment_label = Label(self.add_root, font=('Times', 9, 'italic'), text='YY', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            yy_payment_label.place(x=700, y=375)
+
+            date_payment_label = Label(self.add_root, font=self.font_add_frame, text='Payment Date', fg='black', bg='#8DEEEE',
+                               borderwidth=3,
+                               relief=GROOVE, width=15)
+            date_payment_label.place(x=400, y=400)
+
+
+            number_installment_label = Label(self.add_root, font=self.font_add_frame, text='Total Installment', fg='black',
+                                     bg='#8DEEEE',
+                                     borderwidth=3,
+                                     relief=GROOVE, width=15)
+            number_installment_label.place(x=20, y=490)
+            remain_installment_label=Label(self.add_root, font=self.font_add_frame, text='Remain Installment', fg='black', bg='#8DEEEE',
+                                      borderwidth=3,
+                                      relief=GROOVE, width=17)
+            remain_installment_label.place(x=400, y=490)
+            next_installment_label = Label(self.add_root, font=self.font_add_frame, text='Next Installment', fg='black',
+                                             bg='#8DEEEE',
+                                             borderwidth=3,
+                                             relief=GROOVE, width=17)
+            next_installment_label.place(x=20, y=545)
+
+            dd_installment_label = Label(self.add_root, font=('Times', 9, 'italic'), text='DD', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            dd_installment_label.place(x=180, y=525)
+            mm_installment_label = Label(self.add_root, font=('Times', 9, 'italic'), text='MM', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            mm_installment_label.place(x=250, y=525)
+            yy_installment_label = Label(self.add_root, font=('Times', 9, 'italic'), text='YY', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            yy_installment_label.place(x=320, y=525)
+            amount_installment_label = Label(self.add_root, font=('Times', 9, 'italic'), text='Amount', fg='black', bg='#C1CDCD',
+                                         borderwidth=3)
+            amount_installment_label.place(x=500, y=525)
+
+
+
+            detail_installment_label = Label(self.add_root, font=self.font_add_frame, text='Important Information (if need)', fg='black',
+                                             bg='#8DEEEE',
+                                             borderwidth=3,
+                                             relief=GROOVE, width=30)
+            detail_installment_label.place(x=20, y=590)
+
+
+
+
+            ##-------------------------------------------------------- Entry
+
+            file_no_entry=Entry(self.add_root,textvariable=self.file_no_add_val,font=self.font_add_frame_entry,bd=2, width=15)
+            file_no_entry.place(x=150,y=40)
+            office_entry = Entry(self.add_root,textvariable=self.name_office_add_val, font=self.font_add_frame_entry, bd=2, width=25)
+            office_entry.place(x=545, y=40)
+            cust_name_entry = Entry(self.add_root,textvariable=self.name_add_val, font=self.font_add_frame_entry, bd=2, width=25)
+            cust_name_entry.place(x=150, y=80)
+            address_entry = Entry(self.add_root,textvariable=self.address_add_val, font=self.font_add_frame_entry, bd=2, width=25)
+            address_entry.place(x=545, y=80)
+            cust_no_entry = Entry(self.add_root,textvariable=self.customer_no_add_val, font=self.font_add_frame_entry, bd=2, width=25)
+            cust_no_entry.place(x=150, y=120)
+            meter_no_entry = Entry(self.add_root,textvariable=self.meter_no_add_val, font=self.font_add_frame_entry, bd=2, width=25)
+            meter_no_entry.place(x=545, y=120)
+            mobile_no_entry = Entry(self.add_root, textvariable=self.mobile_add_val, font=self.font_add_frame_entry, bd=2,
+                                    width=25)
+            mobile_no_entry.place(x=150, y=160)
+
+            dd_date_entry = Entry(self.add_root,textvariable=self.dd_date_add_val, font=self.font_add_frame_entry, bd=2, width=6)
+            dd_date_entry.place(x=150, y=265)
+            mm_date_entry = Entry(self.add_root, textvariable=self.mm_date_add_val, font=self.font_add_frame_entry, bd=2,
+                               width=6)
+            mm_date_entry.place(x=220, y=265)
+            yy_date_entry = Entry(self.add_root, textvariable=self.yy_date_add_val, font=self.font_add_frame_entry, bd=2,
+                               width=6)
+            yy_date_entry.place(x=290, y=265)
+
+
+            ref_no_entry = Entry(self.add_root,textvariable=self.ref_no_add_val, font=self.font_add_frame_entry, bd=2, width=25)
+            ref_no_entry.place(x=545, y=265)
+            billed_unit_entry = Entry(self.add_root,textvariable=self.billed_unit_add_val, font=self.font_add_frame_entry, bd=2, width=25)
+            billed_unit_entry.place(x=150, y=305)
+            billed_amount_entry = Entry(self.add_root,textvariable=self.billed_amount_add_val, font=self.font_add_frame_entry, bd=2, width=25)
+            billed_amount_entry.place(x=545, y=305)
+            collection_amount_entry = Entry(self.add_root, textvariable=self.collection_amount_add_val,
+                                        font=self.font_add_frame_entry, bd=2, width=25)
+            collection_amount_entry.place(x=150, y=345)
+            payorder_no_entry = Entry(self.add_root, textvariable=self.payorder_no_add_val,
+                                            font=self.font_add_frame_entry, bd=2, width=25)
+            payorder_no_entry.place(x=545, y=345)
+            bank_entry = Entry(self.add_root, textvariable=self.bank_add_val,
+                                            font=self.font_add_frame_entry, bd=2, width=25)
+            bank_entry.place(x=150, y=400)
+            dd_date_entry = Entry(self.add_root, textvariable=self.dd_payment_add_val, font=self.font_add_frame_entry, bd=2,
+                                  width=6)
+            dd_date_entry.place(x=540, y=400)
+            mm_date_entry = Entry(self.add_root, textvariable=self.mm_payment_add_val, font=self.font_add_frame_entry, bd=2,
+                                  width=6)
+            mm_date_entry.place(x=610, y=400)
+            yy_date_entry = Entry(self.add_root, textvariable=self.yy_payment_add_val, font=self.font_add_frame_entry, bd=2,
+                                  width=6)
+            yy_date_entry.place(x=680, y=400)
+
+
+
+            number_installment_entry=Entry(self.add_root, textvariable=self.total_installment_add_val,
+                                            font=self.font_add_frame_entry, bd=2, width=25)
+            number_installment_entry.place(x=150, y=490)
+            remain_installment_entry=Entry(self.add_root, textvariable=self.remain_installment_add_val,
+                                            font=self.font_add_frame_entry, bd=2, width=25)
+            remain_installment_entry.place(x=545, y=490)
+
+
+            dd_installment_entry = Entry(self.add_root, textvariable=self.dd_installment_add_val, font=self.font_add_frame_entry, bd=2,
+                                  width=6)
+            dd_installment_entry.place(x=165, y=545)
+            mm_installment_entry = Entry(self.add_root, textvariable=self.mm_installment_add_val, font=self.font_add_frame_entry, bd=2,
+                                  width=6)
+            mm_installment_entry.place(x=235, y=545)
+            yy_installment_entry = Entry(self.add_root, textvariable=self.yy_installment_add_val, font=self.font_add_frame_entry, bd=2,
+                                  width=6)
+            yy_installment_entry.place(x=305, y=545)
+
+            amount_installment_entry = Entry(self.add_root, textvariable=self.amount_installment_add_val,
+                                         font=self.font_add_frame_entry, bd=2,
+                                         width=20)
+            amount_installment_entry.place(x=450, y=545)
+            detail_installment_entry = Entry(self.add_root, textvariable=self.detail_installment_add_val,
+                                             font=self.font_add_frame_entry, bd=2, width=50)
+            detail_installment_entry.place(x=300, y=590)
+
+            ##-------------------------------------------- Submit button
+
+            submit_btn = Button(self.add_root,text='Submit',width=17,font=self.font_add_frame_entry, bd=6, relief=GROOVE,
+                             bg='#00C957', fg='black',command=self.submit_add)
+            submit_btn.place(x=330, y=630)
+
+
+            self.add_root.mainloop()
+            print('add')
+        else:
+            messagebox.showerror('Error', 'Please Connect Your Database ',parent=self.root)
+
+##-------------------------------------------------------------------------------------------------------------
+    def submit_update(self):
+        serial=self.serial_update_val_update
+        file_no=self.file_no_update_val
+        office_name=self.name_office_update_val
+        customer_name=self.name_update_val
+        customer_no=self.customer_no_update_val
+        reference_no=self.ref_no_update_val
+        collection_amount=self.new_collection_update_val.get()
+        payment_date= self.yy_payment_update_val.get()  + self.mm_payment_update_val.get() + self.dd_payment_update_val.get()
+        payorder_no = self.payorder_no_update_val.get()
+        bank = self.bank_update_val.get()
+
+
+
+        total_no_installment = self.total_installment_update_val.get()
+        remain_no_installment = self.remain_installment_update_val.get()
+        new_collection_amount=self.new_collection_update_val.get()+self.previous_collection_amount
+        new_due_amount=self.previous_due_amount-self.new_collection_update_val.get()
+
+
+
+
+
+        next_installment_date = self.yy_installment_update_val.get()  + self.mm_installment_update_val.get() + self.dd_installment_update_val.get()
+        next_installment_amount = self.amount_installment_update_val.get()
+        important_information = self.detail_installment_update_val.get()
+
+        try:
+            res = messagebox.askyesnocancel('Notification',
+                                      'Do you want to update File No. {} '.format(
+                                          file_no), parent=self.update_root)
+            if res==True:
+
+
+
+                strr = 'update customerinformation set collection_amount=%s,due_amount=%s,total_no_installment=%s,remain_no_installment=%s,next_installment_date=%s,' \
+                       'next_installment_amount=%s,important_information=%s where file_no=%s'
+                self.mycurser.execute(strr, (new_collection_amount,new_due_amount,total_no_installment,
+                                             remain_no_installment,next_installment_date,next_installment_amount,important_information,file_no))
+                self.con.commit()
+
+                strr = 'insert into payment (file_no,office_name,customer_name,customer_no,reference_no,collection_amount,payment_date,bank,payorder_no) ' \
+                       'values(%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+
+                self.mycurser.execute(strr, (file_no, office_name, customer_name, customer_no, reference_no,
+                                             collection_amount, payment_date, bank, payorder_no))
+                self.con.commit()
+
+                self.update_root.destroy()
+        except:
+            messagebox.showerror('Error','please check all data',parent=self.update_root)
+
+        strr = 'select * from customerinformation'
+        self.mycurser.execute(strr)
+        data = self.mycurser.fetchall()
+        self.displaytable.delete(*self.displaytable.get_children())
+        o = 1
+        for i in data:
+            vv = [o, i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11], i[12], i[13], i[14], i[15],
+                  i[16], i[17], i[18]]
+            o = o + 1
+            self.displaytable.insert('', END, values=vv)
+
+        #self.update_root.destroy()
+
+
+        print('update submit')
+    def update(self):
+        if self.connectionok == True:
+            try:
+                if (self.payment_frame==True):
+                    self.full_intro_display_payment_frame.destroy()
+                    self.table()
+                self.update_root = Toplevel(master=self.display_frame)
+                self.update_root.grab_set()
+                self.update_root.title('New Entry')
+                self.update_root.geometry('800x685+20+10')
+                self.update_root.configure(bg='#CAFF70')
+                self.update_root.iconbitmap('icon/main_icon.ico')
+                ##--------------------------------------------------------- Color
+                update_bg='#CAFF70'
+                ##---------------------------------------------------------import data from displaytable
+                cc = self.displaytable.focus()
+                content = self.displaytable.item(cc)
+                pp = content['values']
+
+                ##-------------------------------------------------------- variables
+
+                self.serial_update_val = IntVar()
+                self.file_no_update_val = StringVar()
+                self.name_update_val = StringVar()
+                self.name_office_update_val = StringVar()
+                self.address_update_val = StringVar()
+                self.customer_no_update_val = StringVar()
+                self.meter_no_update_val = StringVar()
+                self.dd_date_update_val = StringVar()
+                self.mm_date_update_val = StringVar()
+                self.yy_date_update_val = StringVar()
+                # self.date_update_val = self.yy_date_update_val.get()+'/'+self.mm_date_update_val.get()+'/'+self.dd_date_update_val.get()
+                self.ref_no_update_val = StringVar()
+                self.billed_unit_update_val = IntVar()
+                self.billed_amount_update_val = IntVar()
+                self.collection_amount_update_val = IntVar()
+                self.due_amount_update_val = IntVar()
+                self.installment_update_val = StringVar()
+                self.mobile_update_val = StringVar()
+                self.comment_update_val = StringVar()
+                self.total_installment_update_val = StringVar()
+                self.remain_installment_update_val = StringVar()
+                self.detail_installment_update_val = StringVar()
+                self.dd_installment_update_val = StringVar()
+                self.mm_installment_update_val = StringVar()
+                self.yy_installment_update_val = StringVar()
+
+                self.payorder_no_update_val = StringVar()
+                self.bank_update_val = StringVar()
+                self.dd_payment_update_val = StringVar()
+                self.mm_payment_update_val = StringVar()
+                self.yy_payment_update_val = StringVar()
+                # self.next_installment_date_update_val = self.yy_installment_update_val.get() + '/' + self.mm_installment_update_val.get() + '/' + self.dd_installment_update_val.get()
+                self.amount_installment_update_val = IntVar()
+                self.new_collection_update_val=IntVar()
+        ####------------------------------------------------------------- set
+
+
+
+                self.total_installment_update_val.set(pp[14])
+                self.remain_installment_update_val.set(pp[15])
+                self.detail_installment_update_val.set(pp[18])
+
+                ####---------------------------------------------------------help variables
+                self.file_no_update_val=pp[1]
+                self.name_update_val=pp[3]
+                self.name_office_update_val=pp[2]
+
+                self.customer_no_update_val=pp[5]
+                self.ref_no_update_val=pp[9]
+
+                self.previous_collection_amount=pp[12]
+                self.previous_due_amount=pp[13]
+                self.serial_update_val_update=pp[0]
+
+                ##-------------------------------------------------------- Label
+                customer_label = Label(self.update_root, font=self.font_add_frame, text='Customer  Information', fg='#006400',
+                                       bg='#CDC8B1', borderwidth=3,
+                                       relief=GROOVE, width=40)
+                customer_label.place(x=250, y=5)
+                panal_label = Label(self.update_root, font=self.font_add_frame, text='Panal  Information', fg='#006400',
+                                    bg='#CDC8B1', borderwidth=3,
+                                    relief=GROOVE, width=40)
+                panal_label.place(x=250, y=200)
+
+                installment_label = Label(self.update_root, font=self.font_add_frame, text='Installment  Information',
+                                          fg='#006400', bg='#CDC8B1', borderwidth=3,
+                                          relief=GROOVE, width=40)
+                installment_label.place(x=250, y=360)
+
+                #serial_no_label=Label(self.update_root, font=self.font_add_frame, text='Serial No', fg='black', bg='#8DEEEE',
+                #                      borderwidth=3,
+                 #                     relief=GROOVE, width=15)
+                #serial_no_label.place(x=20, y=40)
+
+                file_no_label = Label(self.update_root, font=self.font_add_frame, text='File No', fg='black', bg='#8DEEEE',
+                                      borderwidth=3,
+                                      relief=GROOVE, width=15)
+                file_no_label.place(x=20, y=40)
+                office_label = Label(self.update_root, font=self.font_add_frame, text='Name of Office', fg='black', bg='#8DEEEE',
+                                     borderwidth=3,
+                                     relief=GROOVE, width=15)
+                office_label.place(x=400, y=80)
+                cust_name_label = Label(self.update_root, font=self.font_add_frame, text='Customer Name', fg='black', bg='#8DEEEE',
+                                        borderwidth=3,
+                                        relief=GROOVE, width=15)
+                cust_name_label.place(x=20, y=80)
+                address_label = Label(self.update_root, font=self.font_add_frame, text='Address', fg='black', bg='#8DEEEE',
+                                      borderwidth=3,
+                                      relief=GROOVE, width=15)
+                address_label.place(x=400, y=120)
+                cust_no_label = Label(self.update_root, font=self.font_add_frame, text='Customer No.', fg='black', bg='#8DEEEE',
+                                      borderwidth=3,
+                                      relief=GROOVE, width=15)
+                cust_no_label.place(x=20, y=120)
+                meter_no_label = Label(self.update_root, font=self.font_add_frame, text='Meter No.', fg='black', bg='#8DEEEE',
+                                       borderwidth=3,
+                                       relief=GROOVE, width=15)
+                meter_no_label.place(x=400, y=160)
+                mobile_no_label = Label(self.update_root, font=self.font_add_frame, text='Mobile No.', fg='black', bg='#8DEEEE',
+                                        borderwidth=3,
+                                        relief=GROOVE, width=15)
+                mobile_no_label.place(x=20, y=160)
+
+                date_label = Label(self.update_root, font=self.font_add_frame, text='Issue Date', fg='black', bg='#8DEEEE',
+                                   borderwidth=3,
+                                   relief=GROOVE, width=15)
+                date_label.place(x=20, y=235)
+                ref_no_label = Label(self.update_root, font=self.font_add_frame, text='Reference No.', fg='black', bg='#8DEEEE',
+                                     borderwidth=3,
+                                     relief=GROOVE, width=15)
+                ref_no_label.place(x=400, y=235)
+                billed_unit_label = Label(self.update_root, font=self.font_add_frame, text='Billed Unit', fg='black', bg='#8DEEEE',
+                                          borderwidth=3,
+                                          relief=GROOVE, width=15)
+                billed_unit_label.place(x=20, y=275)
+                billed_amount_label = Label(self.update_root, font=self.font_add_frame, text='Billed Amount', fg='black',
+                                            bg='#8DEEEE',
+                                            borderwidth=3,
+                                            relief=GROOVE, width=15)
+                billed_amount_label.place(x=400, y=275)
+                collection_amount_label = Label(self.update_root, font=self.font_add_frame, text='Collection Amount', fg='black',
+                                                bg='#8DEEEE',
+                                                borderwidth=3,
+                                                relief=GROOVE, width=15)
+                collection_amount_label.place(x=20, y=315)
+                due_amount_label = Label(self.update_root, font=self.font_add_frame, text='Due Amount', fg='black',
+                                         bg='#8DEEEE',
+                                         borderwidth=3,
+                                         relief=GROOVE, width=15)
+                due_amount_label.place(x=400, y=315)
+                number_installment_label = Label(self.update_root, font=self.font_add_frame, text='Total Installment', fg='black',
+                                                 bg='#8DEEEE',
+                                                 borderwidth=3,
+                                                 relief=GROOVE, width=15)
+                number_installment_label.place(x=20, y=405)
+                remain_installment_label = Label(self.update_root, font=self.font_add_frame, text='Remain Installment', fg='black',
+                                                 bg='#8DEEEE',
+                                                 borderwidth=3,
+                                                 relief=GROOVE, width=17)
+                remain_installment_label.place(x=400, y=405)
+                new_collection_label = Label(self.update_root, font=self.font_add_frame, text='New payment', fg='black',
+                                             bg='#8DEEEE',
+                                             borderwidth=3,
+                                             relief=GROOVE, width=15)
+                new_collection_label.place(x=20, y=440)
+                payorder_label = Label(self.update_root, font=self.font_add_frame, text='Payorder No.', fg='black',
+                                             bg='#8DEEEE',
+                                             borderwidth=3,
+                                             relief=GROOVE, width=17)
+                payorder_label.place(x=400, y=440)
+
+                bank_label = Label(self.update_root, font=self.font_add_frame, text='Bank', fg='black',
+                                             bg='#8DEEEE',
+                                             borderwidth=3,
+                                             relief=GROOVE, width=15)
+                bank_label.place(x=20, y=495)
+                pament_date_label = Label(self.update_root, font=self.font_add_frame, text='Payment Date',
+                                                 fg='black',
+                                                 bg='#8DEEEE',
+                                                 borderwidth=3,
+                                                 relief=GROOVE, width=17)
+                pament_date_label.place(x=400, y=495)
+
+
+                dd_pament_label = Label(self.update_root, font=('Times', 9, 'italic'), text='DD', fg='black', bg='#C1CDCD',
+                                             borderwidth=3)
+                dd_pament_label.place(x=560, y=475)
+                mm_pament_label = Label(self.update_root, font=('Times', 9, 'italic'), text='MM', fg='black', bg='#C1CDCD',
+                                             borderwidth=3)
+                mm_pament_label.place(x=630, y=475)
+                yy_pament_label = Label(self.update_root, font=('Times', 9, 'italic'), text='YY', fg='black', bg='#C1CDCD',
+                                             borderwidth=3)
+                yy_pament_label.place(x=700, y=475)
+
+
+
+                next_installment_label = Label(self.update_root, font=self.font_add_frame, text='Next Installment', fg='black',
+                                               bg='#8DEEEE',
+                                               borderwidth=3,
+                                               relief=GROOVE, width=17)
+                next_installment_label.place(x=20, y=555)
+
+
+
+                dd_installment_label = Label(self.update_root, font=('Times', 9, 'italic'), text='DD', fg='black', bg='#C1CDCD',
+                                             borderwidth=3)
+                dd_installment_label.place(x=180, y=535)
+                mm_installment_label = Label(self.update_root, font=('Times', 9, 'italic'), text='MM', fg='black', bg='#C1CDCD',
+                                             borderwidth=3)
+                mm_installment_label.place(x=250, y=535)
+                yy_installment_label = Label(self.update_root, font=('Times', 9, 'italic'), text='YY', fg='black', bg='#C1CDCD',
+                                             borderwidth=3)
+                yy_installment_label.place(x=320, y=535)
+                amount_installment_label = Label(self.update_root, font=('Times', 9, 'italic'), text='Amount', fg='black',
+                                                 bg='#C1CDCD',
+                                                 borderwidth=3)
+                amount_installment_label.place(x=500, y=535)
+
+                detail_installment_label = Label(self.update_root, font=self.font_add_frame,
+                                                 text='Important Information (if need)', fg='black',
+                                                 bg='#8DEEEE',
+                                                 borderwidth=3,
+                                                 relief=GROOVE, width=30)
+                detail_installment_label.place(x=20, y=600)
+
+                ##-------------------------------------------------------- Entry
+                #serial_no_data=Label(self.update_root, font=self.font_add_frame,text=pp[0], fg='black',bg=update_bg,
+                  #                               borderwidth=3)
+                #serial_no_data.place(x=160, y=40)
+
+                file_no_data = Label(self.update_root, font=self.font_add_frame,text=pp[1], fg='black',bg=update_bg,
+                                                 borderwidth=3)
+
+                file_no_data.place(x=160, y=40)
+
+                customer_name_data=Label(self.update_root, font=self.font_add_frame,text=pp[3], fg='black',bg=update_bg,
+                                                 borderwidth=3)
+                customer_name_data.place(x=160, y=80)
+
+                office_data = Label(self.update_root, font=self.font_add_frame,text=pp[2], fg='black',bg=update_bg,
+                                                 borderwidth=3)
+
+                office_data.place(x=555, y=80)
+                customer_no_data=Label(self.update_root, font=self.font_add_frame,text=pp[5], fg='black',bg=update_bg,
+                                                 borderwidth=3)
+                customer_no_data.place(x=160, y=120)
+
+                address_data = Label(self.update_root, font=self.font_add_frame,text=pp[4], fg='black',bg=update_bg,
+                                                 borderwidth=3)
+
+                address_data.place(x=555, y=120)
+                mobile_no_data=Label(self.update_root, font=self.font_add_frame,text=str(pp[7]), fg='black',bg=update_bg)
+
+                mobile_no_data.place(x=160, y=160)
+
+                meter_no_data = Label(self.update_root, font=self.font_add_frame,text=pp[6], fg='black',bg=update_bg,
+                                                 borderwidth=3)
+
+                meter_no_data.place(x=555, y=160)
+
+                issue_date_data = Label(self.update_root, font=self.font_add_frame, text=pp[8], fg='black', bg=update_bg,
+                                      borderwidth=3)
+
+                issue_date_data.place(x=160, y=235)
+
+                ref_no_data = Label(self.update_root, font=self.font_add_frame, text=pp[9], fg='black', bg=update_bg,
+                                      borderwidth=3)
+
+                ref_no_data.place(x=555, y=235)
+                billed_unit_data = Label(self.update_root, font=self.font_add_frame, text=pp[10], fg='black', bg=update_bg,
+                                      borderwidth=3)
+
+                billed_unit_data.place(x=160, y=275)
+                billed_amount_data = Label(self.update_root, font=self.font_add_frame, text=pp[11], fg='black', bg=update_bg,
+                                      borderwidth=3)
+
+                billed_amount_data.place(x=555, y=275)
+                collection_amount_data = Label(self.update_root, font=self.font_add_frame, text=pp[12], fg='black', bg=update_bg,
+                                      borderwidth=3)
+
+                collection_amount_data.place(x=160, y=315)
+                due_amount_data = Label(self.update_root, font=self.font_add_frame, text=pp[11]-pp[12], fg='black', bg=update_bg,
+                                      borderwidth=3)
+
+                due_amount_data.place(x=555, y=315)
+
+
+
+        #------------------------------------------------------------------------------------------------------
+
+                number_installment_entry = Entry(self.update_root, textvariable=self.total_installment_update_val,
+                                                 font=self.font_add_frame_entry, bd=2, width=25)
+                number_installment_entry.place(x=150, y=405)
+                remain_installment_entry = Entry(self.update_root, textvariable=self.remain_installment_update_val,
+                                                 font=self.font_add_frame_entry, bd=2, width=25)
+                remain_installment_entry.place(x=545, y=405)
+                new_collection_entry = Entry(self.update_root, textvariable=self.new_collection_update_val,
+                                                 font=self.font_add_frame_entry, bd=2, width=25)
+                new_collection_entry.place(x=150, y=440)
+
+                payorfer_no_entry = Entry(self.update_root, textvariable=self.payorder_no_update_val,
+                                             font=self.font_add_frame_entry, bd=2, width=25)
+                payorfer_no_entry.place(x=545, y=440)
+
+
+
+                bank_entry = Entry(self.update_root, textvariable=self.bank_update_val,
+                                             font=self.font_add_frame_entry, bd=2, width=25)
+                bank_entry.place(x=150, y=495)
+
+
+
+                dd_payment_entry = Entry(self.update_root, textvariable=self.dd_payment_update_val,
+                                             font=self.font_add_frame_entry, bd=2,
+                                             width=6)
+                dd_payment_entry.place(x=545, y=495)
+                mm_payment_entry = Entry(self.update_root, textvariable=self.mm_payment_update_val,
+                                             font=self.font_add_frame_entry, bd=2,
+                                             width=6)
+                mm_payment_entry.place(x=615, y=495)
+                yy_payment_entry = Entry(self.update_root, textvariable=self.yy_payment_update_val,
+                                             font=self.font_add_frame_entry, bd=2,
+                                             width=6)
+                yy_payment_entry.place(x=685, y=495)
+
+
+
+
+
+
+
+
+
+
+
+                dd_installment_entry = Entry(self.update_root, textvariable=self.dd_installment_update_val,
+                                             font=self.font_add_frame_entry, bd=2,
+                                             width=6)
+                dd_installment_entry.place(x=165, y=555)
+                mm_installment_entry = Entry(self.update_root, textvariable=self.mm_installment_update_val,
+                                             font=self.font_add_frame_entry, bd=2,
+                                             width=6)
+                mm_installment_entry.place(x=235, y=555)
+                yy_installment_entry = Entry(self.update_root, textvariable=self.yy_installment_update_val,
+                                             font=self.font_add_frame_entry, bd=2,
+                                             width=6)
+                yy_installment_entry.place(x=305, y=555)
+
+                amount_installment_entry = Entry(self.update_root, textvariable=self.amount_installment_update_val,
+                                                 font=self.font_add_frame_entry, bd=2,
+                                                 width=20)
+                amount_installment_entry.place(x=450, y=555)
+
+
+                detail_installment_entry = Entry(self.update_root, textvariable=self.detail_installment_update_val,
+                                                 font=self.font_add_frame_entry, bd=2, width=50)
+                detail_installment_entry.place(x=300, y=600)
+
+                ##-------------------------------------------- Submit button
+
+                submit_btn = Button(self.update_root, text='Submit', width=17, font=self.font_add_frame_entry, bd=6, relief=GROOVE,
+                                    bg='#00C957', fg='black', command=self.submit_update)
+                submit_btn.place(x=330, y=640)
+
+                self.update_root.mainloop()
+
+                print("search")
+                print(pp[14])
+
+
+
+                self.total_installment_update_val.set(pp[14])
+                self.remain_installment_update_val.set(pp[15])
+                self.detail_installment_update_val.set(pp[18])
+
+
+
+                print("update")
+            except:
+                res=messagebox.showerror('Error', 'Please Select data  ', parent=self.update_root)
+
+                self.update_root.destroy()
+
+        else:
+            messagebox.showerror('Error', 'Please Connect Your Database ',parent=self.root)
+
+
+##-------------------------------------------------------------------------------------------------
+    def submit_search(self):
+        file_no = self.file_no_search_val.get()
+        office_name = self.name_office_search_val.get()
+        customer_name = self.name_search_val.get()
+        address = self.address_search_val.get()
+        customer_no = self.customer_no_search_val.get()
+        meter_no = self.meter_no_search_val.get()
+        mobile = self.mobile_search_val.get()
+        reference_no = self.ref_no_search_val.get()
+        issue_date = self.yy_date_search_val.get() + self.mm_date_search_val.get() + self.dd_date_search_val.get()
+        issue_date_to = self.yy_date_to_search_val.get() + self.mm_date_to_search_val.get() + self.dd_date_to_search_val.get()
+        installment_date=self.yy_installment_search_val.get() + self.mm_installment_search_val.get() + self.dd_installment_search_val.get()
+        installment_date_to=self.yy_installment_to_search_val.get() + self.mm_installment_to_search_val.get() + self.dd_installment_to_search_val.get()
+
+
+
+        try:
+            if (file_no != ''):
+                strr='select * from customerinformation where file_no=%s'
+                self.mycurser.execute(strr,(file_no))
+                data=self.mycurser.fetchall()
+                self.displaytable.delete(*self.displaytable.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11], i[12], i[13], i[14],
+                          i[15], i[16], i[17], i[18]]
+                    self.displaytable.insert('', END, values=vv)
+
+            elif (office_name != ''):
+                strr='select * from customerinformation where office_name=%s'
+                self.mycurser.execute(strr,(office_name))
+                data=self.mycurser.fetchall()
+                self.displaytable.delete(*self.displaytable.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11], i[12], i[13], i[14],
+                          i[15], i[16], i[17], i[18]]
+                    self.displaytable.insert('', END, values=vv)
+            elif (customer_name != ''):
+                strr='select * from customerinformation where customer_name=%s'
+                self.mycurser.execute(strr,(customer_name))
+                data=self.mycurser.fetchall()
+                self.displaytable.delete(*self.displaytable.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11], i[12], i[13], i[14],
+                          i[15], i[16], i[17], i[18]]
+                    self.displaytable.insert('', END, values=vv)
+            elif (address != ''):
+                strr='select * from customerinformation where address=%s'
+                self.mycurser.execute(strr,(address))
+                data=self.mycurser.fetchall()
+                self.displaytable.delete(*self.displaytable.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11], i[12], i[13], i[14],
+                          i[15], i[16], i[17], i[18]]
+                    self.displaytable.insert('', END, values=vv)
+            elif (customer_no != ''):
+                strr='select * from customerinformation where customer_no=%s'
+                self.mycurser.execute(strr,(customer_no))
+                data=self.mycurser.fetchall()
+                self.displaytable.delete(*self.displaytable.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11], i[12], i[13], i[14],
+                          i[15], i[16], i[17], i[18]]
+                    self.displaytable.insert('', END, values=vv)
+            elif (meter_no != ''):
+                strr='select * from customerinformation where meter_no=%s'
+                self.mycurser.execute(strr,(meter_no))
+                data=self.mycurser.fetchall()
+                self.displaytable.delete(*self.displaytable.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11], i[12], i[13], i[14],
+                          i[15], i[16], i[17], i[18]]
+                    self.displaytable.insert('', END, values=vv)
+            elif (mobile != ''):
+                strr='select * from customerinformation where mobile=%s'
+                self.mycurser.execute(strr,(mobile))
+                data=self.mycurser.fetchall()
+                self.displaytable.delete(*self.displaytable.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11], i[12], i[13], i[14],
+                          i[15], i[16], i[17], i[18]]
+                    self.displaytable.insert('', END, values=vv)
+            elif (reference_no != ''):
+                strr='select * from customerinformation where reference_no=%s'
+                self.mycurser.execute(strr,(reference_no))
+                data=self.mycurser.fetchall()
+                self.displaytable.delete(*self.displaytable.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11], i[12], i[13], i[14],
+                          i[15], i[16], i[17], i[18]]
+                    self.displaytable.insert('', END, values=vv)
+
+
+            elif (issue_date != ''):
+                strr='select * from customerinformation where issue_date BETWEEN %s AND %s'
+                self.mycurser.execute(strr,(issue_date,issue_date_to))
+                data=self.mycurser.fetchall()
+                self.displaytable.delete(*self.displaytable.get_children())
+                for i in data:
+                    vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11], i[12], i[13], i[14],
+                          i[15], i[16], i[17], i[18]]
+                    self.displaytable.insert('', END, values=vv)
+
+            elif (installment_date != ''):
+                strr='select * from customerinformation where next_installment_date BETWEEN %s AND %s'
+                self.mycurser.execute(strr,(installment_date,installment_date_to))
+                data=self.mycurser.fetchall()
+                self.displaytable.delete(*self.displaytable.get_children())
+
+                for i in data:
+                    if i[13]>0:
+                        vv = [i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11], i[12], i[13], i[14],i[15], i[16], i[17], i[18]]
+                        self.displaytable.insert('', END, values=vv)
+        except:
+            messagebox.showerror('Error', 'please check all Field', parent=self.search_root)
+
+        print('search submit')
+    def search(self):
+        if self.connectionok == True:
+            if (self.payment_frame==True):
+                self.full_intro_display_payment_frame.destroy()
+                self.table()
+            self.search_root = Toplevel(master=self.display_frame)
+            self.search_root.grab_set()
+            self.search_root.title('Search')
+            self.search_root.geometry('800x480+40+40')
+            self.search_root.configure(bg='#CAFF70')
+            self.search_root.iconbitmap('icon/main_icon.ico')
+
+            ##-------------------------------------------------------- variables
+
+            self.serial_search_val = IntVar()
+            self.file_no_search_val = StringVar()
+            self.name_search_val = StringVar()
+            self.name_office_search_val = StringVar()
+            self.address_search_val = StringVar()
+            self.customer_no_search_val = StringVar()
+            self.meter_no_search_val = StringVar()
+            self.dd_date_search_val = StringVar()
+            self.mm_date_search_val = StringVar()
+            self.yy_date_search_val = StringVar()
+            self.dd_date_to_search_val = StringVar()
+            self.mm_date_to_search_val = StringVar()
+            self.yy_date_to_search_val = StringVar()
+            # self.date_search_val = self.yy_date_search_val.get()+'/'+self.mm_date_search_val.get()+'/'+self.dd_date_search_val.get()
+            self.ref_no_search_val = StringVar()
+            self.billed_unit_search_val = IntVar()
+            self.billed_amount_search_val = IntVar()
+            self.collection_amount_search_val = IntVar()
+            self.due_amount_search_val = IntVar()
+            self.installment_search_val = StringVar()
+            self.mobile_search_val = StringVar()
+            self.comment_search_val = StringVar()
+            self.total_installment_search_val = StringVar()
+            self.remain_installment_search_val = StringVar()
+            self.detail_installment_search_val = StringVar()
+            self.dd_installment_search_val = StringVar()
+            self.mm_installment_search_val = StringVar()
+            self.yy_installment_search_val = StringVar()
+            self.dd_installment_to_search_val = StringVar()
+            self.mm_installment_to_search_val = StringVar()
+            self.yy_installment_to_search_val = StringVar()
+            # self.next_installment_date_search_val = self.yy_installment_search_val.get() + '/' + self.mm_installment_search_val.get() + '/' + self.dd_installment_search_val.get()
+            self.amount_installment_search_val = IntVar()
+
+    #        ##-------------------------------------------------------- Label
+            search_label=Label(self.search_root, font=('Times',20,'bold'), text='Search Information', fg='black', bg='#CAFF70',
+                                  borderwidth=1)
+
+            search_label.place(x=320, y=10)
+
+
+            file_no_label = Label(self.search_root, font=self.font_add_frame, text='File No', fg='black', bg='#8DEEEE',
+                                  borderwidth=3,
+                                  relief=GROOVE, width=15)
+            file_no_label.place(x=20, y=60)
+            office_label = Label(self.search_root, font=self.font_add_frame, text='Name of Office', fg='black', bg='#8DEEEE',
+                                 borderwidth=3,
+                                 relief=GROOVE, width=15)
+            office_label.place(x=400, y=60)
+            cust_name_label = Label(self.search_root, font=self.font_add_frame, text='Customer Name', fg='black', bg='#8DEEEE',
+                                    borderwidth=3,
+                                    relief=GROOVE, width=15)
+            cust_name_label.place(x=20, y=100)
+            address_label = Label(self.search_root, font=self.font_add_frame, text='Address', fg='black', bg='#8DEEEE',
+                                  borderwidth=3,
+                                  relief=GROOVE, width=15)
+            address_label.place(x=400, y=100)
+            cust_no_label = Label(self.search_root, font=self.font_add_frame, text='Customer No.', fg='black', bg='#8DEEEE',
+                                  borderwidth=3,
+                                  relief=GROOVE, width=15)
+            cust_no_label.place(x=20, y=140)
+            meter_no_label = Label(self.search_root, font=self.font_add_frame, text='Meter No.', fg='black', bg='#8DEEEE',
+                                   borderwidth=3,
+                                   relief=GROOVE, width=15)
+            meter_no_label.place(x=400, y=140)
+            mobile_no_label = Label(self.search_root, font=self.font_add_frame, text='Mobile No.', fg='black', bg='#8DEEEE',
+                                    borderwidth=3,
+                                    relief=GROOVE, width=15)
+            mobile_no_label.place(x=20, y=180)
+            ref_no_label = Label(self.search_root, font=self.font_add_frame, text='Reference No.', fg='black', bg='#8DEEEE',
+                                 borderwidth=3,
+                                 relief=GROOVE, width=15)
+            ref_no_label.place(x=400, y=180)
+
+            dd_label = Label(self.search_root, font=('Times', 9, 'italic'), text='DD', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            dd_label.place(x=180, y=245)
+            mm_label = Label(self.search_root, font=('Times', 9, 'italic'), text='MM', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            mm_label.place(x=250, y=245)
+            yy_label = Label(self.search_root, font=('Times', 9, 'italic'), text='YY', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            yy_label.place(x=320, y=245)
+
+            date_label = Label(self.search_root, font=self.font_add_frame, text='Issue Date', fg='black', bg='#8DEEEE',
+                               borderwidth=3,
+                               relief=GROOVE, width=15)
+            date_label.place(x=20, y=265)
+
+            to_label=Label(self.search_root, font=('Times', 9, 'italic'), text='To', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            to_label.place(x=400, y=270)
+
+            dd_label_to = Label(self.search_root, font=('Times', 9, 'italic'), text='DD', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            dd_label_to.place(x=480, y=245)
+            mm_label_to = Label(self.search_root, font=('Times', 9, 'italic'), text='MM', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            mm_label_to.place(x=550, y=245)
+            yy_label_to = Label(self.search_root, font=('Times', 9, 'italic'), text='YY', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            yy_label_to.place(x=620, y=245)
+
+            next_installment_label = Label(self.search_root, font=self.font_add_frame, text='Installment Date', fg='black',
+                                           bg='#8DEEEE',
+                                           borderwidth=3,
+                                           relief=GROOVE, width=17)
+            next_installment_label.place(x=20, y=350)
+
+            dd_installment_label = Label(self.search_root, font=('Times', 9, 'italic'), text='DD', fg='black', bg='#C1CDCD',
+                                         borderwidth=3)
+            dd_installment_label.place(x=180, y=330)
+            mm_installment_label = Label(self.search_root, font=('Times', 9, 'italic'), text='MM', fg='black', bg='#C1CDCD',
+                                         borderwidth=3)
+            mm_installment_label.place(x=250, y=330)
+            yy_installment_label = Label(self.search_root, font=('Times', 9, 'italic'), text='YY', fg='black', bg='#C1CDCD',
+                                         borderwidth=3)
+            yy_installment_label.place(x=320, y=330)
+            to_installment_label = Label(self.search_root, font=('Times', 9, 'italic'), text='To', fg='black', bg='#C1CDCD',
+                             borderwidth=3)
+            to_installment_label.place(x=400, y=350)
+            dd_installment_to_label = Label(self.search_root, font=('Times', 9, 'italic'), text='DD', fg='black', bg='#C1CDCD',
+                                         borderwidth=3)
+            dd_installment_to_label.place(x=480, y=330)
+            mm_installment_to_label = Label(self.search_root, font=('Times', 9, 'italic'), text='MM', fg='black', bg='#C1CDCD',
+                                         borderwidth=3)
+            mm_installment_to_label.place(x=550, y=330)
+            yy_installment_to_label = Label(self.search_root, font=('Times', 9, 'italic'), text='YY', fg='black', bg='#C1CDCD',
+                                         borderwidth=3)
+            yy_installment_to_label.place(x=620, y=330)
+
+            ##-------------------------------------------------------- Entry
+
+            file_no_entry = Entry(self.search_root, textvariable=self.file_no_search_val, font=self.font_add_frame_entry, bd=2,
+                                  width=15)
+            file_no_entry.place(x=150, y=60)
+            office_entry = Entry(self.search_root, textvariable=self.name_office_search_val, font=self.font_add_frame_entry, bd=2,
+                                 width=25)
+            office_entry.place(x=545, y=60)
+            cust_name_entry = Entry(self.search_root, textvariable=self.name_search_val, font=self.font_add_frame_entry, bd=2,
+                                    width=25)
+            cust_name_entry.place(x=150, y=100)
+            address_entry = Entry(self.search_root, textvariable=self.address_search_val, font=self.font_add_frame_entry, bd=2,
+                                  width=25)
+            address_entry.place(x=545, y=100)
+            cust_no_entry = Entry(self.search_root, textvariable=self.customer_no_search_val, font=self.font_add_frame_entry,
+                                  bd=2, width=25)
+            cust_no_entry.place(x=150, y=140)
+            meter_no_entry = Entry(self.search_root, textvariable=self.meter_no_search_val, font=self.font_add_frame_entry, bd=2,
+                                   width=25)
+            meter_no_entry.place(x=545, y=140)
+            mobile_no_entry = Entry(self.search_root, textvariable=self.mobile_search_val, font=self.font_add_frame_entry, bd=2,
+                                    width=25)
+            mobile_no_entry.place(x=150, y=180)
+            ref_no_entry = Entry(self.search_root, textvariable=self.ref_no_search_val, font=self.font_add_frame_entry, bd=2,
+                                 width=25)
+            ref_no_entry.place(x=545, y=180)
+
+            dd_date_entry = Entry(self.search_root, textvariable=self.dd_date_search_val, font=self.font_add_frame_entry, bd=2,
+                                  width=6)
+            dd_date_entry.place(x=165, y=265)
+            mm_date_entry = Entry(self.search_root, textvariable=self.mm_date_search_val, font=self.font_add_frame_entry, bd=2,
+                                  width=6)
+            mm_date_entry.place(x=235, y=265)
+            yy_date_entry = Entry(self.search_root, textvariable=self.yy_date_search_val, font=self.font_add_frame_entry, bd=2,
+                                  width=6)
+            yy_date_entry.place(x=305, y=265)
+
+
+
+
+            dd_date_entry_to = Entry(self.search_root, textvariable=self.dd_date_to_search_val, font=self.font_add_frame_entry, bd=2,
+                                  width=6)
+            dd_date_entry_to.place(x=465, y=265)
+            mm_date_entry_to = Entry(self.search_root, textvariable=self.mm_date_to_search_val, font=self.font_add_frame_entry, bd=2,
+                                  width=6)
+            mm_date_entry_to.place(x=536, y=265)
+            yy_date_entry_to = Entry(self.search_root, textvariable=self.yy_date_to_search_val, font=self.font_add_frame_entry, bd=2,
+                                  width=6)
+            yy_date_entry_to.place(x=605, y=265)
+
+
+
+            dd_installment_entry = Entry(self.search_root, textvariable=self.dd_installment_search_val,
+                                         font=self.font_add_frame_entry, bd=2,
+                                         width=6)
+            dd_installment_entry.place(x=165, y=350)
+            mm_installment_entry = Entry(self.search_root, textvariable=self.mm_installment_search_val,
+                                         font=self.font_add_frame_entry, bd=2,
+                                         width=6)
+            mm_installment_entry.place(x=235, y=350)
+            yy_installment_entry = Entry(self.search_root, textvariable=self.yy_installment_search_val,
+                                         font=self.font_add_frame_entry, bd=2,
+                                         width=6)
+            yy_installment_entry.place(x=305, y=350)
+
+            dd_installment_to_entry = Entry(self.search_root, textvariable=self.dd_installment_to_search_val,
+                                         font=self.font_add_frame_entry, bd=2,
+                                         width=6)
+            dd_installment_to_entry.place(x=465, y=350)
+            mm_installment_to_entry = Entry(self.search_root, textvariable=self.mm_installment_to_search_val,
+                                         font=self.font_add_frame_entry, bd=2,
+                                         width=6)
+            mm_installment_to_entry.place(x=535, y=350)
+            yy_installment_to_entry = Entry(self.search_root, textvariable=self.yy_installment_to_search_val,
+                                         font=self.font_add_frame_entry, bd=2,
+                                         width=6)
+            yy_installment_to_entry.place(x=605, y=350)
+
+            ##-------------------------------------------- Submit button
+
+            submit_btn = Button(self.search_root, text='Search', width=17, font=self.font_add_frame_entry, bd=6, relief=GROOVE,
+                                bg='#00C957', fg='black', command=self.submit_search)
+            submit_btn.place(x=330, y=400)
+
+            self.search_root.mainloop()
+            print('search')
+        else:
+            messagebox.showerror('Error', 'Please Connect Your Database ',parent=self.root)
+
+##---------------------------------------------------------------------------------------------------------
+    def showall(self):
+        if self.connectionok == True:
+            if (self.payment_frame==True):
+                self.full_intro_display_payment_frame.destroy()
+                self.table()
+            strr = 'select * from customerinformation'
+            self.mycurser.execute(strr)
+            data = self.mycurser.fetchall()
+            self.displaytable.delete(*self.displaytable.get_children())
+            o=1
+            for i in data:
+                vv = [o,i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11], i[12], i[13], i[14], i[15],
+                      i[16], i[17], i[18]]
+                o=o+1
+                self.displaytable.insert('',END, values=vv)
+        else:
+            messagebox.showerror('Error', 'Please Connect Your Database ',parent=self.root)
+
+
+
+
+
+
+root=Tk()
+obj_1=stf(root)
+root.mainloop()
